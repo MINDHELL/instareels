@@ -58,22 +58,6 @@ video{
     margin-top:5px;
 }
 
-.actions{
-    position:absolute;
-    right:15px;
-    bottom:100px;
-    color:white;
-    z-index:10;
-    text-align:center;
-    text-shadow:0 0 5px black;
-}
-
-.action-btn{
-    font-size:28px;
-    margin:15px 0;
-    cursor:pointer;
-}
-
 #soundBtn{
     position:fixed;
     top:20px;
@@ -96,62 +80,15 @@ video{
 <button id="soundBtn">🔇</button>
 
 <div class="swiper">
-<div class="swiper-wrapper">
-
-<div class="swiper-slide">
-    <video autoplay muted loop playsinline controls>
-        <source src="https://www.w3schools.com/html/mov_bbb.mp4">
-    </video>
-
-    <div class="overlay">
-        <div class="channel">@Reelsx60</div>
-        <div class="caption">Sample Reel 1</div>
+    <div class="swiper-wrapper">
+        <!-- Videos will be loaded here dynamically -->
     </div>
-
-    <div class="actions">
-        <div class="action-btn">❤️</div>
-        <div class="action-btn">🔗</div>
-    </div>
-</div>
-
-<div class="swiper-slide">
-    <video muted loop playsinline controls>
-        <source src="https://www.w3schools.com/html/mov_bbb.mp4">
-    </video>
-
-    <div class="overlay">
-        <div class="channel">@Reelsx60</div>
-        <div class="caption">Sample Reel 2</div>
-    </div>
-
-    <div class="actions">
-        <div class="action-btn">❤️</div>
-        <div class="action-btn">🔗</div>
-    </div>
-</div>
-
-<div class="swiper-slide">
-    <video muted loop playsinline controls>
-        <source src="https://www.w3schools.com/html/movie.mp4">
-    </video>
-
-    <div class="overlay">
-        <div class="channel">@Reelsx60</div>
-        <div class="caption">Sample Reel 3</div>
-    </div>
-
-    <div class="actions">
-        <div class="action-btn">❤️</div>
-        <div class="action-btn">🔗</div>
-    </div>
-</div>
-
-</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
 <script>
+
 const swiper = new Swiper(".swiper", {
     direction: "vertical",
     slidesPerView: 1,
@@ -159,58 +96,75 @@ const swiper = new Swiper(".swiper", {
     speed: 300
 });
 
-const videos = document.querySelectorAll("video");
-
 let soundEnabled = false;
 
-// Tap video to Play/Pause
-videos.forEach(video => {
+async function loadReels() {
 
-    video.addEventListener("click", () => {
+    const res = await fetch("/api/videos");
+    const videos = await res.json();
 
-        if(video.paused){
-            video.play();
-        }else{
-            video.pause();
-        }
-
-    });
-
-});
-
-function playActiveVideo() {
+    const wrapper = document.querySelector(".swiper-wrapper");
+    wrapper.innerHTML = "";
 
     videos.forEach(v => {
+
+        const slide = document.createElement("div");
+        slide.className = "swiper-slide";
+
+        slide.innerHTML = `
+            <video autoplay muted loop playsinline controls>
+                <source src="${v.url}">
+            </video>
+
+            <div class="overlay">
+                <div class="channel">@Reelsx60</div>
+                <div class="caption">${v.caption || "Reel"}</div>
+            </div>
+        `;
+
+        wrapper.appendChild(slide);
+    });
+
+    swiper.update();
+    playActiveVideo();
+}
+
+// pause all videos except active one
+function playActiveVideo() {
+
+    document.querySelectorAll("video").forEach(v => {
         v.pause();
     });
 
-    const activeVideo =
-        swiper.slides[swiper.activeIndex].querySelector("video");
+    const active = swiper.slides[swiper.activeIndex]
+        ?.querySelector("video");
 
-    activeVideo.muted = !soundEnabled;
-
-    activeVideo.play().catch(() => {});
-
+    if(active){
+        active.muted = !soundEnabled;
+        active.play().catch(()=>{});
+    }
 }
 
 swiper.on("slideChange", playActiveVideo);
 
-// Sound Button
+// sound toggle
 document.getElementById("soundBtn").onclick = () => {
 
     soundEnabled = !soundEnabled;
 
-    const activeVideo =
-        swiper.slides[swiper.activeIndex].querySelector("video");
+    const active = swiper.slides[swiper.activeIndex]
+        ?.querySelector("video");
 
-    activeVideo.muted = !soundEnabled;
+    if(active){
+        active.muted = !soundEnabled;
+    }
 
     document.getElementById("soundBtn").innerText =
         soundEnabled ? "🔊" : "🔇";
-
 };
 
-playActiveVideo();
+loadReels();
+
 </script>
 
 </body>
