@@ -36,6 +36,7 @@ video{
     width:100%;
     height:100%;
     object-fit:cover;
+    background:black;
 }
 
 .overlay{
@@ -44,6 +45,7 @@ video{
     left:15px;
     color:white;
     z-index:10;
+    text-shadow:0 0 5px black;
 }
 
 .channel{
@@ -63,11 +65,13 @@ video{
     color:white;
     z-index:10;
     text-align:center;
+    text-shadow:0 0 5px black;
 }
 
 .action-btn{
     font-size:28px;
     margin:15px 0;
+    cursor:pointer;
 }
 
 #soundBtn{
@@ -82,6 +86,7 @@ video{
     font-size:24px;
     background:rgba(0,0,0,0.6);
     color:white;
+    cursor:pointer;
 }
 </style>
 </head>
@@ -94,7 +99,7 @@ video{
 <div class="swiper-wrapper">
 
 <div class="swiper-slide">
-    <video autoplay muted loop playsinline>
+    <video autoplay muted loop playsinline controls>
         <source src="https://www.w3schools.com/html/mov_bbb.mp4">
     </video>
 
@@ -110,7 +115,7 @@ video{
 </div>
 
 <div class="swiper-slide">
-    <video muted loop playsinline>
+    <video muted loop playsinline controls>
         <source src="https://www.w3schools.com/html/mov_bbb.mp4">
     </video>
 
@@ -126,7 +131,7 @@ video{
 </div>
 
 <div class="swiper-slide">
-    <video muted loop playsinline>
+    <video muted loop playsinline controls>
         <source src="https://www.w3schools.com/html/movie.mp4">
     </video>
 
@@ -158,11 +163,25 @@ const videos = document.querySelectorAll("video");
 
 let soundEnabled = false;
 
+// Tap video to Play/Pause
+videos.forEach(video => {
+
+    video.addEventListener("click", () => {
+
+        if(video.paused){
+            video.play();
+        }else{
+            video.pause();
+        }
+
+    });
+
+});
+
 function playActiveVideo() {
 
     videos.forEach(v => {
         v.pause();
-        v.currentTime = 0;
     });
 
     const activeVideo =
@@ -170,11 +189,13 @@ function playActiveVideo() {
 
     activeVideo.muted = !soundEnabled;
 
-    activeVideo.play().catch(()=>{});
+    activeVideo.play().catch(() => {});
+
 }
 
 swiper.on("slideChange", playActiveVideo);
 
+// Sound Button
 document.getElementById("soundBtn").onclick = () => {
 
     soundEnabled = !soundEnabled;
@@ -186,14 +207,11 @@ document.getElementById("soundBtn").onclick = () => {
 
     document.getElementById("soundBtn").innerText =
         soundEnabled ? "🔊" : "🔇";
+
 };
 
 playActiveVideo();
 </script>
 
 </body>
-    </html>
-
-
-
-    
+</html>
