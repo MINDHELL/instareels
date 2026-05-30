@@ -81,14 +81,13 @@ video{
 
 <div class="swiper">
     <div class="swiper-wrapper">
-        <!-- Videos will be loaded here dynamically -->
+        <!-- dynamic reels -->
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
 <script>
-
 
 const swiper = new Swiper(".swiper", {
     direction: "vertical",
@@ -109,20 +108,17 @@ async function loadReels() {
 
     videos.forEach(v => {
 
-        const videoURL =
-            `https://api.telegram.org/file/bot<8990620972:AAFyvhcDiDH_NI_nVmRBTZSWzF-Rrx0yRL0>/videos/${v.file_id}`;
-
         const slide = document.createElement("div");
         slide.className = "swiper-slide";
 
         slide.innerHTML = `
             <video autoplay muted loop playsinline controls>
-                <source src="${videoURL}">
+                <source src="${v.url}">
             </video>
 
             <div class="overlay">
                 <div class="channel">@Reelsx60</div>
-                <div class="caption">${v.caption}</div>
+                <div class="caption">${v.caption || "Reel"}</div>
             </div>
         `;
 
@@ -147,6 +143,7 @@ function playActive() {
 
 swiper.on("slideChange", playActive);
 
+// sound toggle
 document.getElementById("soundBtn").onclick = () => {
 
     soundEnabled = !soundEnabled;
@@ -164,7 +161,6 @@ document.getElementById("soundBtn").onclick = () => {
 
 loadReels();
 
-    
 </script>
 
 </body>
