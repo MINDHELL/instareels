@@ -17,6 +17,7 @@ html,body{
     height:100%;
     overflow:hidden;
     background:black;
+    font-family:Arial,sans-serif;
 }
 
 .swiper{
@@ -25,11 +26,9 @@ html,body{
 }
 
 .swiper-slide{
+    position:relative;
     width:100%;
     height:100vh;
-    display:flex;
-    justify-content:center;
-    align-items:center;
     background:black;
 }
 
@@ -38,33 +37,111 @@ video{
     height:100%;
     object-fit:cover;
 }
+
+.overlay{
+    position:absolute;
+    bottom:20px;
+    left:15px;
+    color:white;
+    z-index:10;
+}
+
+.channel{
+    font-size:18px;
+    font-weight:bold;
+}
+
+.caption{
+    font-size:14px;
+    margin-top:5px;
+}
+
+.actions{
+    position:absolute;
+    right:15px;
+    bottom:100px;
+    color:white;
+    z-index:10;
+    text-align:center;
+}
+
+.action-btn{
+    font-size:28px;
+    margin:15px 0;
+}
+
+#soundBtn{
+    position:fixed;
+    top:20px;
+    right:20px;
+    z-index:9999;
+    width:50px;
+    height:50px;
+    border:none;
+    border-radius:50%;
+    font-size:24px;
+    background:rgba(0,0,0,0.6);
+    color:white;
+}
 </style>
 </head>
 
 <body>
 
+<button id="soundBtn">🔇</button>
+
 <div class="swiper">
-    <div class="swiper-wrapper">
+<div class="swiper-wrapper">
 
-        <div class="swiper-slide">
-            <video autoplay muted loop playsinline>
-                <source src="https://www.w3schools.com/html/mov_bbb.mp4">
-            </video>
-        </div>
+<div class="swiper-slide">
+    <video autoplay muted loop playsinline>
+        <source src="https://www.w3schools.com/html/mov_bbb.mp4">
+    </video>
 
-        <div class="swiper-slide">
-            <video muted loop playsinline>
-                <source src="https://www.w3schools.com/html/mov_bbb.mp4">
-            </video>
-        </div>
-
-        <div class="swiper-slide">
-            <video muted loop playsinline>
-                <source src="https://www.w3schools.com/html/movie.mp4">
-            </video>
-        </div>
-
+    <div class="overlay">
+        <div class="channel">@Reelsx60</div>
+        <div class="caption">Sample Reel 1</div>
     </div>
+
+    <div class="actions">
+        <div class="action-btn">❤️</div>
+        <div class="action-btn">🔗</div>
+    </div>
+</div>
+
+<div class="swiper-slide">
+    <video muted loop playsinline>
+        <source src="https://www.w3schools.com/html/mov_bbb.mp4">
+    </video>
+
+    <div class="overlay">
+        <div class="channel">@Reelsx60</div>
+        <div class="caption">Sample Reel 2</div>
+    </div>
+
+    <div class="actions">
+        <div class="action-btn">❤️</div>
+        <div class="action-btn">🔗</div>
+    </div>
+</div>
+
+<div class="swiper-slide">
+    <video muted loop playsinline>
+        <source src="https://www.w3schools.com/html/movie.mp4">
+    </video>
+
+    <div class="overlay">
+        <div class="channel">@Reelsx60</div>
+        <div class="caption">Sample Reel 3</div>
+    </div>
+
+    <div class="actions">
+        <div class="action-btn">❤️</div>
+        <div class="action-btn">🔗</div>
+    </div>
+</div>
+
+</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
@@ -79,7 +156,10 @@ const swiper = new Swiper(".swiper", {
 
 const videos = document.querySelectorAll("video");
 
+let soundEnabled = false;
+
 function playActiveVideo() {
+
     videos.forEach(v => {
         v.pause();
         v.currentTime = 0;
@@ -88,13 +168,32 @@ function playActiveVideo() {
     const activeVideo =
         swiper.slides[swiper.activeIndex].querySelector("video");
 
-    activeVideo.play();
+    activeVideo.muted = !soundEnabled;
+
+    activeVideo.play().catch(()=>{});
 }
 
 swiper.on("slideChange", playActiveVideo);
+
+document.getElementById("soundBtn").onclick = () => {
+
+    soundEnabled = !soundEnabled;
+
+    const activeVideo =
+        swiper.slides[swiper.activeIndex].querySelector("video");
+
+    activeVideo.muted = !soundEnabled;
+
+    document.getElementById("soundBtn").innerText =
+        soundEnabled ? "🔊" : "🔇";
+};
 
 playActiveVideo();
 </script>
 
 </body>
-</html>
+    </html>
+
+
+
+    
