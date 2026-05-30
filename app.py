@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, render_template
 from pyrogram import Client
+import os
 
 app = Flask(__name__)
 
@@ -8,6 +9,10 @@ API_HASH = "bcfb546e78c22c0e141bdd694282e9bc"
 SESSION_STRING = "BQHjI8gAiWc44QuMTl7v3OUkY2n6gXzLl6OadGmfPBXG_z5WNfOj8YK6LXja45FqjWp1WNccAAIN_DsE-LxfjgEcufLRFjtTjPEjYjrcEIh3KfzIp8UxtYBoVz6oT_EqBMBe6gWNYe4yHCFudGIZ2D1OX3X07dl4LWAJvw643f2m1zknJrwNGCtJBFTr3Y-foPeoE3rnHEFnZvkHzCP9d9VRyezTS4Zc5TBS18ZwrrbMmAf_EIicUTIyWRm2ZZMhjA14X2-1K7L2m-C_-EMtj33QzxEk6x274S6Jno5KiFD4vL_pY45utc3oeP20WMQXdYtXD3jJV2VB731uZKWR_ZdKFZzCFQAAAAGkK6mgAA"
 CHANNEL = "Reelsx60"
 
+
+VIDEO_DIR = "static/videos"
+os.makedirs(VIDEO_DIR, exist_ok=True)
+
 tg = Client(
     "reels",
     api_id=API_ID,
@@ -15,15 +20,19 @@ tg = Client(
     session_string=SESSION_STRING
 )
 
-def get_videos(limit=10):
+def fetch_videos(limit=10):
     videos = []
 
     with tg:
-        for msg in tg.get_chat_history(CHANNEL, limit=50):
+        for i, msg in enumerate(tg.get_chat_history(CHANNEL, limit=50)):
             if msg.video:
-                file_id = msg.video.file_id
+                file_path = os.path.join(VIDEO_DIR, f"{i}.mp4")
+
+                if not os.path.exists(file_path):
+                    msg.download(file_path)
+
                 videos.append({
-                    "file_id": file_id,
+                    "url": "/" + file_path,
                     "caption": msg.caption or "Reel"
                 })
 
@@ -34,8 +43,8 @@ def get_videos(limit=10):
 
 
 @app.route("/api/videos")
-def videos_api():
-    return jsonify(get_videos(10))
+def api():
+    return jsonify(fetch_videos())
 
 
 @app.route("/")
