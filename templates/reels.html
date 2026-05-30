@@ -2,23 +2,35 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>ReelsX</title>
+
+<link rel="stylesheet"
+href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
 
 <style>
 html,body{
     margin:0;
     padding:0;
-    overflow-y:scroll;
-    scroll-snap-type:y mandatory;
+    width:100%;
     height:100%;
+    overflow:hidden;
     background:black;
 }
 
-.reel{
+.swiper{
+    width:100%;
     height:100vh;
-    scroll-snap-align:start;
+}
+
+.swiper-slide{
+    width:100%;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:black;
 }
 
 video{
@@ -31,24 +43,58 @@ video{
 
 <body>
 
-<div class="reel">
-<video controls autoplay loop>
-<source src="https://www.w3schools.com/html/mov_bbb.mp4">
-</video>
+<div class="swiper">
+    <div class="swiper-wrapper">
+
+        <div class="swiper-slide">
+            <video autoplay muted loop playsinline>
+                <source src="https://www.w3schools.com/html/mov_bbb.mp4">
+            </video>
+        </div>
+
+        <div class="swiper-slide">
+            <video muted loop playsinline>
+                <source src="https://www.w3schools.com/html/mov_bbb.mp4">
+            </video>
+        </div>
+
+        <div class="swiper-slide">
+            <video muted loop playsinline>
+                <source src="https://www.w3schools.com/html/movie.mp4">
+            </video>
+        </div>
+
+    </div>
 </div>
 
-<div class="reel">
-<video controls loop>
-<source src="https://www.w3schools.com/html/mov_bbb.mp4">
-</video>
-</div>
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 
+<script>
+const swiper = new Swiper(".swiper", {
+    direction: "vertical",
+    slidesPerView: 1,
+    resistanceRatio: 0,
+    speed: 300
+});
 
-<div class="reel">
-<video controls loop>
-<source src="https://www.w3schools.com/html/movie.mp4">
-</video>
-</div>
+const videos = document.querySelectorAll("video");
+
+function playActiveVideo() {
+    videos.forEach(v => {
+        v.pause();
+        v.currentTime = 0;
+    });
+
+    const activeVideo =
+        swiper.slides[swiper.activeIndex].querySelector("video");
+
+    activeVideo.play();
+}
+
+swiper.on("slideChange", playActiveVideo);
+
+playActiveVideo();
+</script>
 
 </body>
 </html>
