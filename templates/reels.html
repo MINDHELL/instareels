@@ -89,6 +89,7 @@ video{
 
 <script>
 
+
 const swiper = new Swiper(".swiper", {
     direction: "vertical",
     slidesPerView: 1,
@@ -108,17 +109,20 @@ async function loadReels() {
 
     videos.forEach(v => {
 
+        const videoURL =
+            `https://api.telegram.org/file/bot<YOUR_BOT_TOKEN>/videos/${v.file_id}`;
+
         const slide = document.createElement("div");
         slide.className = "swiper-slide";
 
         slide.innerHTML = `
             <video autoplay muted loop playsinline controls>
-                <source src="${v.url}">
+                <source src="${videoURL}">
             </video>
 
             <div class="overlay">
                 <div class="channel">@Reelsx60</div>
-                <div class="caption">${v.caption || "Reel"}</div>
+                <div class="caption">${v.caption}</div>
             </div>
         `;
 
@@ -126,28 +130,23 @@ async function loadReels() {
     });
 
     swiper.update();
-    playActiveVideo();
+    playActive();
 }
 
-// pause all videos except active one
-function playActiveVideo() {
+function playActive() {
 
-    document.querySelectorAll("video").forEach(v => {
-        v.pause();
-    });
+    document.querySelectorAll("video").forEach(v => v.pause());
 
     const active = swiper.slides[swiper.activeIndex]
         ?.querySelector("video");
 
     if(active){
-        active.muted = !soundEnabled;
         active.play().catch(()=>{});
     }
 }
 
-swiper.on("slideChange", playActiveVideo);
+swiper.on("slideChange", playActive);
 
-// sound toggle
 document.getElementById("soundBtn").onclick = () => {
 
     soundEnabled = !soundEnabled;
@@ -165,6 +164,7 @@ document.getElementById("soundBtn").onclick = () => {
 
 loadReels();
 
+    
 </script>
 
 </body>
