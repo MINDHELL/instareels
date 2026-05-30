@@ -2,7 +2,6 @@ from flask import Flask, jsonify, render_template
 from pyrogram import Client
 import os
 import json
-import threading
 
 app = Flask(__name__)
 
@@ -23,7 +22,7 @@ CACHE = []
 
 
 # =========================
-# LOAD FROM DISK CACHE
+# LOAD CACHE FROM DISK
 # =========================
 def load_cache():
     global CACHE
@@ -41,17 +40,18 @@ def save_cache():
 
 
 # =========================
-# FETCH FROM TELEGRAM ONLY ONCE
+# BUILD CACHE (IMPORTANT FIX)
 # =========================
-def fetch_once():
+def build_cache():
+
     global CACHE
 
     if CACHE:
-        return
-
-    os.makedirs("static/videos", exist_ok=True)
+        return CACHE
 
     videos = []
+
+    os.makedirs("static/videos", exist_ok=True)
 
     with tg:
         count = 0
@@ -78,11 +78,7 @@ def fetch_once():
     CACHE = videos
     save_cache()
 
-
-# =========================
-# BACKGROUND LOADER (IMPORTANT)
-# =========================
-threading.Thread(target=fetch_once).start()
+    return CACHE
 
 
 # =========================
@@ -95,13 +91,23 @@ def home():
 
 @app.route("/api/videos")
 def api_videos():
-    load_cache()
-    return jsonify(CACHE)
+
+    data = build_cache()
+
+    return jsonify(data)
 
 
 # =========================
-# START
+# STARTUP LOAD (IMPORTANT)
+# =========================
+with app.app_context():
+    load_cache()
+    if not CACHE:
+        build_cache()
+
+
+# =========================
+# RUN
 # =========================
 if __name__ == "__main__":
-    load_cache()
     app.run(host="0.0.0.0", port=5000)
