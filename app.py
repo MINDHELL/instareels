@@ -17,12 +17,15 @@ tg = Client(
     session_string=SESSION_STRING
 )
 
-CACHE_FILE = "cache.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+VIDEO_DIR = os.path.join(BASE_DIR, "static", "videos")
+CACHE_FILE = os.path.join(BASE_DIR, "cache.json")
+
 CACHE = []
 
 
 # =========================
-# LOAD CACHE FROM DISK
+# SAFE CACHE LOAD
 # =========================
 def load_cache():
     global CACHE
@@ -31,16 +34,13 @@ def load_cache():
             CACHE = json.load(f)
 
 
-# =========================
-# SAVE CACHE
-# =========================
 def save_cache():
     with open(CACHE_FILE, "w") as f:
         json.dump(CACHE, f)
 
 
 # =========================
-# BUILD CACHE (IMPORTANT FIX)
+# SAFE DOWNLOAD FUNCTION
 # =========================
 def build_cache():
 
@@ -49,9 +49,9 @@ def build_cache():
     if CACHE:
         return CACHE
 
-    videos = []
+    os.makedirs(VIDEO_DIR, exist_ok=True)
 
-    os.makedirs("static/videos", exist_ok=True)
+    videos = []
 
     with tg:
         count = 0
@@ -60,13 +60,18 @@ def build_cache():
 
             if msg.video:
 
-                file_path = f"static/videos/{count}.mp4"
+                file_path = os.path.join(VIDEO_DIR, f"{count}.mp4")
 
+                # download safely (NO temp issues)
                 if not os.path.exists(file_path):
-                    msg.download(file_path)
+                    try:
+                        msg.download(file_path)
+                    except Exception as e:
+                        print("Download failed:", e)
+                        continue
 
                 videos.append({
-                    "url": "/" + file_path,
+                    "url": f"/static/videos/{count}.mp4",
                     "caption": msg.caption or "Reel"
                 })
 
@@ -91,19 +96,13 @@ def home():
 
 @app.route("/api/videos")
 def api_videos():
-
-    data = build_cache()
-
-    return jsonify(data)
+    return jsonify(build_cache())
 
 
 # =========================
-# STARTUP LOAD (IMPORTANT)
+# STARTUP SAFE LOAD (NO DOWNLOAD)
 # =========================
-with app.app_context():
-    load_cache()
-    if not CACHE:
-        build_cache()
+load_cache()
 
 
 # =========================
