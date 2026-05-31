@@ -46,44 +46,50 @@ def build_cache():
 
     global CACHE
 
-    if CACHE:
-        return CACHE
-
     os.makedirs(VIDEO_DIR, exist_ok=True)
 
     videos = []
 
     with tg:
+
         count = 0
 
         for msg in tg.get_chat_history(CHANNEL, limit=50):
 
-            if msg.video:
+            if not msg.video:
+                continue
 
-                file_path = os.path.join(VIDEO_DIR, f"{count}.mp4")
+            file_path = os.path.join(
+                VIDEO_DIR,
+                f"{msg.id}.mp4"
+            )
 
-                # download safely (NO temp issues)
-                if not os.path.exists(file_path):
-                    try:
-                        msg.download(file_path)
-                    except Exception as e:
-                        print("Download failed:", e)
-                        continue
+            if not os.path.exists(file_path):
 
-                videos.append({
-                    "url": f"/static/videos/{count}.mp4",
-                    "caption": msg.caption or "Reel"
-                })
+                try:
+                    msg.download(file_path)
 
-                count += 1
+                except Exception as e:
+                    print("Download failed:", e)
+                    continue
 
-            if count >= 10:
+            videos.append({
+                "url": f"/static/videos/{msg.id}.mp4",
+                "caption": msg.caption or "Reel"
+            })
+
+            count += 1
+
+            if count >= 20:
                 break
 
     CACHE = videos
+
     save_cache()
 
     return CACHE
+
+
 
 
 # =========================
@@ -96,7 +102,17 @@ def home():
 
 @app.route("/api/videos")
 def api_videos():
-    return jsonify(build_cache())
+
+    try:
+        return jsonify(build_cache())
+
+    except Exception as e:
+
+        print(e)
+
+        return jsonify(CACHE)
+
+
 
 
 # =========================
