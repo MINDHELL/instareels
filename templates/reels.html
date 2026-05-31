@@ -10,6 +10,7 @@
 href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
 
 <style>
+
 html,body{
     margin:0;
     padding:0;
@@ -27,15 +28,20 @@ html,body{
 
 .swiper-slide{
     position:relative;
+    overflow:hidden;
     width:100%;
     height:100vh;
     background:black;
 }
 
 video{
+    position:absolute;
+    top:0;
+    left:0;
     width:100%;
     height:100%;
     object-fit:cover;
+    object-position:center;
     background:black;
 }
 
@@ -45,7 +51,7 @@ video{
     left:15px;
     color:white;
     z-index:10;
-    text-shadow:0 0 5px black;
+    text-shadow:0 0 8px black;
 }
 
 .channel{
@@ -63,15 +69,34 @@ video{
     top:20px;
     right:20px;
     z-index:9999;
+
     width:50px;
     height:50px;
+
     border:none;
     border-radius:50%;
+
     font-size:24px;
+
     background:rgba(0,0,0,0.6);
     color:white;
+
     cursor:pointer;
 }
+
+.pause-indicator{
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    color:white;
+    font-size:70px;
+    z-index:20;
+    display:none;
+    pointer-events:none;
+    text-shadow:0 0 15px black;
+}
+
 </style>
 </head>
 
@@ -81,7 +106,6 @@ video{
 
 <div class="swiper">
     <div class="swiper-wrapper">
-        <!-- dynamic reels -->
     </div>
 </div>
 
@@ -90,15 +114,15 @@ video{
 <script>
 
 const swiper = new Swiper(".swiper", {
-    direction: "vertical",
-    slidesPerView: 1,
-    resistanceRatio: 0,
-    speed: 300
+    direction:"vertical",
+    slidesPerView:1,
+    resistanceRatio:0,
+    speed:300
 });
 
 let soundEnabled = false;
 
-async function loadReels() {
+async function loadReels(){
 
     const res = await fetch("/api/videos");
     const videos = await res.json();
@@ -112,48 +136,88 @@ async function loadReels() {
         slide.className = "swiper-slide";
 
         slide.innerHTML = `
-            <video autoplay muted loop playsinline controls>
+
+            <video autoplay muted loop playsinline preload="metadata">
                 <source src="${v.url}">
             </video>
+
+            <div class="pause-indicator">⏸</div>
 
             <div class="overlay">
                 <div class="channel">@Reelsx60</div>
                 <div class="caption">${v.caption || "Reel"}</div>
             </div>
+
         `;
 
         wrapper.appendChild(slide);
+
     });
 
     swiper.update();
+
+    addVideoEvents();
+
     playActive();
 }
 
-function playActive() {
+function playActive(){
 
-    document.querySelectorAll("video").forEach(v => v.pause());
+    document.querySelectorAll("video").forEach(v=>{
+        v.pause();
+    });
 
-    const active = swiper.slides[swiper.activeIndex]
+    const activeVideo =
+        swiper.slides[swiper.activeIndex]
         ?.querySelector("video");
 
-    if(active){
-        active.play().catch(()=>{});
+    if(activeVideo){
+
+        activeVideo.muted = !soundEnabled;
+
+        activeVideo.play().catch(()=>{});
     }
 }
 
 swiper.on("slideChange", playActive);
 
-// sound toggle
-document.getElementById("soundBtn").onclick = () => {
+function addVideoEvents(){
+
+    document.querySelectorAll("video").forEach(video=>{
+
+        video.addEventListener("click", ()=>{
+
+            const indicator =
+                video.parentElement.querySelector(".pause-indicator");
+
+            if(video.paused){
+
+                video.play();
+
+                if(indicator)
+                    indicator.style.display = "none";
+
+            }else{
+
+                video.pause();
+
+                if(indicator)
+                    indicator.style.display = "block";
+            }
+
+        });
+
+    });
+
+}
+
+document.getElementById("soundBtn").onclick = ()=>{
 
     soundEnabled = !soundEnabled;
 
-    const active = swiper.slides[swiper.activeIndex]
-        ?.querySelector("video");
-
-    if(active){
-        active.muted = !soundEnabled;
-    }
+    document.querySelectorAll("video").forEach(v=>{
+        v.muted = !soundEnabled;
+    });
 
     document.getElementById("soundBtn").innerText =
         soundEnabled ? "🔊" : "🔇";
