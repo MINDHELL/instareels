@@ -25,22 +25,43 @@ CACHE = []
 
 
 # =========================
-# SAFE CACHE LOAD
+# CACHE LOAD
 # =========================
 def load_cache():
     global CACHE
+
     if os.path.exists(CACHE_FILE):
-        with open(CACHE_FILE, "r") as f:
-            CACHE = json.load(f)
+        try:
+            with open(CACHE_FILE, "r", encoding="utf-8") as f:
+                CACHE = json.load(f)
+        except:
+            CACHE = []
 
 
 def save_cache():
-    with open(CACHE_FILE, "w") as f:
-        json.dump(CACHE, f)
+    with open(CACHE_FILE, "w", encoding="utf-8") as f:
+        json.dump(
+            CACHE,
+            f,
+            ensure_ascii=False,
+            indent=2
+        )
 
 
 # =========================
-# SAFE DOWNLOAD FUNCTION
+# TELEGRAM CONNECT
+# =========================
+def ensure_connected():
+
+    try:
+        if not tg.is_connected:
+            tg.start()
+    except Exception as e:
+        print("Telegram connection error:", e)
+
+
+# =========================
+# BUILD VIDEO CACHE
 # =========================
 def build_cache():
 
@@ -48,9 +69,11 @@ def build_cache():
 
     os.makedirs(VIDEO_DIR, exist_ok=True)
 
+    ensure_connected()
+
     videos = []
 
-    with tg:
+    try:
 
         count = 0
 
@@ -59,22 +82,34 @@ def build_cache():
             if not msg.video:
                 continue
 
+            filename = f"{msg.id}.mp4"
+
             file_path = os.path.join(
                 VIDEO_DIR,
-                f"{msg.id}.mp4"
+                filename
             )
 
             if not os.path.exists(file_path):
 
                 try:
+
+                    print(
+                        f"Downloading video {msg.id}"
+                    )
+
                     msg.download(file_path)
 
                 except Exception as e:
-                    print("Download failed:", e)
+
+                    print(
+                        f"Download failed {msg.id}:",
+                        e
+                    )
+
                     continue
 
             videos.append({
-                "url": f"/static/videos/{msg.id}.mp4",
+                "url": f"/static/videos/{filename}",
                 "caption": msg.caption or "Reel"
             })
 
@@ -83,13 +118,17 @@ def build_cache():
             if count >= 20:
                 break
 
-    CACHE = videos
+        CACHE = videos
 
-    save_cache()
+        save_cache()
 
-    return CACHE
+        return videos
 
+    except Exception as e:
 
+        print("Cache build error:", e)
+
+        return CACHE
 
 
 # =========================
@@ -108,15 +147,13 @@ def api_videos():
 
     except Exception as e:
 
-        print(e)
+        print("API Error:", e)
 
         return jsonify(CACHE)
 
 
-
-
 # =========================
-# STARTUP SAFE LOAD (NO DOWNLOAD)
+# STARTUP
 # =========================
 load_cache()
 
@@ -125,4 +162,9 @@ load_cache()
 # RUN
 # =========================
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+
+    app.run(
+        host="0.0.0.0",
+        port=5000,
+        debug=False
+                     )
