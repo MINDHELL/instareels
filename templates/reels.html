@@ -121,109 +121,222 @@ const swiper = new Swiper(".swiper", {
 });
 
 let soundEnabled = false;
+let currentVideos = [];
 
-async function loadReels(){
+async function loadReels(force=false){
 
-    const res = await fetch("/api/videos");
+    const res =
+        await fetch("/api/videos?t=" + Date.now());
+
     const videos = await res.json();
 
-    const wrapper = document.querySelector(".swiper-wrapper");
+    if(
+        !force &&
+        JSON.stringify(videos)
+        ===
+        JSON.stringify(currentVideos)
+    ){
+        return;
+    }
+
+    currentVideos = videos;
+
+    const wrapper =
+        document.querySelector(".swiper-wrapper");
+
     wrapper.innerHTML = "";
 
-    videos.forEach(v => {
+    videos.forEach(v=>{
 
-        const slide = document.createElement("div");
+        const slide =
+            document.createElement("div");
+
         slide.className = "swiper-slide";
 
         slide.innerHTML = `
 
-            <video autoplay muted loop playsinline preload="metadata">
+            <video
+                autoplay
+                muted
+                loop
+                playsinline
+                preload="auto"
+            >
                 <source src="${v.url}">
             </video>
 
-            <div class="pause-indicator">⏸</div>
+            <div class="pause-indicator">
+                ⏸
+            </div>
 
             <div class="overlay">
-                <div class="channel">@Reelsx60</div>
-                <div class="caption">${v.caption || "Reel"}</div>
+                <div class="channel">
+                    @Reelsx60
+                </div>
+
+                <div class="caption">
+                    ${v.caption || "Reel"}
+                </div>
             </div>
 
         `;
 
         wrapper.appendChild(slide);
-
     });
 
     swiper.update();
 
     addVideoEvents();
 
+    detectVideoType();
+
     playActive();
+}
+
+function detectVideoType(){
+
+    document.querySelectorAll("video")
+    .forEach(video=>{
+
+        video.addEventListener(
+            "loadedmetadata",
+            ()=>{
+
+                const ratio =
+                    video.videoWidth /
+                    video.videoHeight;
+
+                if(ratio > 1){
+
+                    video.style.objectFit =
+                        "contain";
+
+                }else{
+
+                    video.style.objectFit =
+                        "cover";
+                }
+
+            }
+        );
+
+    });
+
+}
+
+function preloadNextVideos(){
+
+    const next1 =
+        swiper.slides[
+            swiper.activeIndex + 1
+        ]?.querySelector("video");
+
+    const next2 =
+        swiper.slides[
+            swiper.activeIndex + 2
+        ]?.querySelector("video");
+
+    if(next1) next1.load();
+
+    if(next2) next2.load();
 }
 
 function playActive(){
 
-    document.querySelectorAll("video").forEach(v=>{
-        v.pause();
-    });
+    document.querySelectorAll("video")
+    .forEach(v=>v.pause());
 
     const activeVideo =
-        swiper.slides[swiper.activeIndex]
-        ?.querySelector("video");
+        swiper.slides[
+            swiper.activeIndex
+        ]?.querySelector("video");
 
     if(activeVideo){
 
-        activeVideo.muted = !soundEnabled;
+        activeVideo.muted =
+            !soundEnabled;
 
-        activeVideo.play().catch(()=>{});
+        activeVideo.play()
+        .catch(()=>{});
     }
+
+    preloadNextVideos();
 }
 
-swiper.on("slideChange", playActive);
+swiper.on(
+    "slideChange",
+    playActive
+);
 
 function addVideoEvents(){
 
-    document.querySelectorAll("video").forEach(video=>{
+    document.querySelectorAll("video")
+    .forEach(video=>{
 
-        video.addEventListener("click", ()=>{
+        video.addEventListener(
+            "click",
+            ()=>{
 
-            const indicator =
-                video.parentElement.querySelector(".pause-indicator");
+                const indicator =
+                    video.parentElement
+                    .querySelector(
+                        ".pause-indicator"
+                    );
 
-            if(video.paused){
+                if(video.paused){
 
-                video.play();
+                    video.play();
 
-                if(indicator)
-                    indicator.style.display = "none";
+                    indicator.style.display =
+                        "none";
 
-            }else{
+                }else{
 
-                video.pause();
+                    video.pause();
 
-                if(indicator)
-                    indicator.style.display = "block";
+                    indicator.style.display =
+                        "block";
+                }
+
             }
-
-        });
+        );
 
     });
 
 }
 
-document.getElementById("soundBtn").onclick = ()=>{
+document
+.getElementById("soundBtn")
+.onclick = ()=>{
 
-    soundEnabled = !soundEnabled;
+    soundEnabled =
+        !soundEnabled;
 
-    document.querySelectorAll("video").forEach(v=>{
-        v.muted = !soundEnabled;
+    document
+    .querySelectorAll("video")
+    .forEach(v=>{
+
+        v.muted =
+            !soundEnabled;
+
     });
 
-    document.getElementById("soundBtn").innerText =
-        soundEnabled ? "🔊" : "🔇";
+    document
+    .getElementById("soundBtn")
+    .innerText =
+        soundEnabled
+        ? "🔊"
+        : "🔇";
 };
 
-loadReels();
+loadReels(true);
+
+/* check for new reels every 30 sec */
+setInterval(()=>{
+
+    loadReels();
+
+},30000);
 
 </script>
 
