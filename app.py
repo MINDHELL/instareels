@@ -25,6 +25,50 @@ CACHE_FILE = os.path.join(BASE_DIR, "cache.json")
 CACHE = []
 
 
+# new lines
+import threading
+
+download_lock = threading.Lock()
+
+def background_download():
+
+    if not download_lock.acquire(blocking=False):
+        return
+
+    try:
+
+        ensure_connected()
+
+        for msg in tg.get_chat_history(CHANNEL, limit=50):
+
+            if not msg.video:
+                continue
+
+            filename = f"{msg.id}.mp4"
+
+            file_path = os.path.join(
+                VIDEO_DIR,
+                filename
+            )
+
+            if os.path.exists(file_path):
+                continue
+
+            print(f"Downloading {msg.id}")
+
+            try:
+                msg.download(file_path)
+                print(f"Finished {msg.id}")
+
+            except Exception as e:
+                print("Download error:", e)
+
+    finally:
+        download_lock.release()
+
+
+
+
 
 # =========================
 # CACHE LOAD
@@ -167,7 +211,7 @@ def api_videos():
 load_cache()
 
 threading.Thread(
-    target=build_cache,
+    target=background_download,
     daemon=True
 ).start()
 
