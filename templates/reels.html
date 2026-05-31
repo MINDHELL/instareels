@@ -248,15 +248,25 @@ function preloadNextVideos(){
             swiper.activeIndex + 2
         ]?.querySelector("video");
 
-    if(next1) next1.load();
-
-    if(next2) next2.load();
+    if(next1){
+    next1.preload = "metadata";
 }
+
+if(next2){
+    next2.preload = "metadata";
+    }
 
 function playActive(){
 
     document.querySelectorAll("video")
-    .forEach(v=>v.pause());
+    .forEach(v => {
+
+        v.pause();
+
+        v.currentTime = v.currentTime;
+
+        v.muted = true;
+    });
 
     const activeVideo =
         swiper.slides[
