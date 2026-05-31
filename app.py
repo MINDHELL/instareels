@@ -1,10 +1,6 @@
 from flask import Flask, jsonify, render_template
 from pyrogram import Client
-import os
-import json
-import threading
-import time
-
+import os, json, threading, time
 
 app = Flask(__name__)
 
@@ -25,183 +21,93 @@ VIDEO_DIR = os.path.join(BASE_DIR, "static", "videos")
 CACHE_FILE = os.path.join(BASE_DIR, "cache.json")
 
 CACHE = []
+DOWNLOADING = set()
+LOCK = threading.Lock()
 
 
-# new lines
-import threading
-
-download_lock = threading.Lock()
-
-def background_download():
-
-    if not download_lock.acquire(blocking=False):
-        return
-
-    try:
-
-        ensure_connected()
-
-        for msg in tg.get_chat_history(CHANNEL, limit=50):
-
-            if not msg.video:
-                continue
-
-            filename = f"{msg.id}.mp4"
-
-            file_path = os.path.join(
-                VIDEO_DIR,
-                filename
-            )
-
-            if os.path.exists(file_path):
-                continue
-
-            print(f"Downloading {msg.id}")
-
-            try:
-                msg.download(file_path)
-                print(f"Finished {msg.id}")
-
-            except Exception as e:
-                print("Download error:", e)
-
-    finally:
-        download_lock.release()
-
-#new
-def cache_updater():
-
-    while True:
-
-        try:
-            build_cache()
-
-        except Exception as e:
-            print("Cache updater:", e)
-
-        time.sleep(60)
-
-
-
-
-
-# =========================
-# CACHE LOAD
-# =========================
+# ---------------- CACHE ----------------
 def load_cache():
     global CACHE
-
     if os.path.exists(CACHE_FILE):
         try:
-            with open(CACHE_FILE, "r", encoding="utf-8") as f:
+            with open(CACHE_FILE, "r") as f:
                 CACHE = json.load(f)
         except:
             CACHE = []
 
 
 def save_cache():
-    with open(CACHE_FILE, "w", encoding="utf-8") as f:
-        json.dump(
-            CACHE,
-            f,
-            ensure_ascii=False,
-            indent=2
-        )
+    with open(CACHE_FILE, "w") as f:
+        json.dump(CACHE, f, indent=2)
 
 
-# =========================
-# TELEGRAM CONNECT
-# =========================
-def ensure_connected():
-
-    try:
-        if not tg.is_connected:
-            tg.start()
-    except Exception as e:
-        print("Telegram connection error:", e)
-
-def download_video(msg, file_path):
-
-    try:
-        print(f"Downloading {msg.id}")
-        msg.download(file_path)
-        print(f"Finished {msg.id}")
-
-    except Exception as e:
-        print("Download error:", e)
+# ---------------- TG CONNECT ----------------
+def ensure_tg():
+    if not tg.is_connected:
+        tg.start()
 
 
-
-
-# =========================
-# BUILD VIDEO CACHE
-# =========================
-
-def build_cache():
-
+# ---------------- BACKGROUND DOWNLOADER ----------------
+def background_loader():
     global CACHE
 
+    ensure_tg()
     os.makedirs(VIDEO_DIR, exist_ok=True)
 
-    ensure_connected()
+    while True:
+        try:
+            for msg in tg.get_chat_history(CHANNEL, limit=100):
 
-    videos = []
+                if not msg.video:
+                    continue
 
-    try:
+                file_id = str(msg.id)
 
-        count = 0
+                file_path = os.path.join(VIDEO_DIR, f"{file_id}.mp4")
 
-        for msg in tg.get_chat_history(CHANNEL, limit=50):
+                with LOCK:
+                    exists = any(v["id"] == file_id for v in CACHE)
 
-            if not msg.video:
-                continue
+                if exists:
+                    continue
 
-            filename = f"{msg.id}.mp4"
+                # mark downloading
+                if file_id in DOWNLOADING:
+                    continue
 
-            file_path = os.path.join(
-                VIDEO_DIR,
-                filename
-            )
+                DOWNLOADING.add(file_id)
 
-            # Download in background
-            if not os.path.exists(file_path):
+                try:
+                    if not os.path.exists(file_path):
+                        print("Downloading", file_id)
+                        msg.download(file_path)
 
-                threading.Thread(
-                    target=download_video,
-                    args=(msg, file_path),
-                    daemon=True
-                ).start()
+                    data = {
+                        "id": file_id,
+                        "url": f"/static/videos/{file_id}.mp4",
+                        "caption": msg.caption or "Reel"
+                    }
 
-                continue
+                    with LOCK:
+                        CACHE.append(data)
+                        save_cache()
 
-            videos.append({
-                "url": f"/static/videos/{filename}",
-                "caption": msg.caption or "Reel"
-            })
+                    print("Finished", file_id)
 
-            count += 1
+                except Exception as e:
+                    print("Download error:", e)
 
-            if count >= 20:
-                break
+                finally:
+                    DOWNLOADING.discard(file_id)
 
-        CACHE = videos
+            time.sleep(30)  # refresh loop
 
-        save_cache()
-
-        return videos
-
-    except Exception as e:
-
-        print("Cache build error:", e)
-
-        return CACHE
-
+        except Exception as e:
+            print("Worker error:", e)
+            time.sleep(10)
 
 
-
-# =========================
-# ROUTES
-# =========================
+# ---------------- ROUTES ----------------
 @app.route("/")
 def home():
     return render_template("reels.html")
@@ -209,27 +115,15 @@ def home():
 
 @app.route("/api/videos")
 def api_videos():
-    return jsonify(CACHE) 
+    with LOCK:
+        return jsonify(sorted(CACHE, key=lambda x: x["id"], reverse=True))
 
 
-# =========================
-# STARTUP
-# =========================
+# ---------------- START ----------------
 load_cache()
 
-threading.Thread(
-    target=cache_updater,
-    daemon=True
-).start()
+threading.Thread(target=background_loader, daemon=True).start()
 
 
-# =========================
-# RUN
-# =========================
 if __name__ == "__main__":
-
-    app.run(
-        host="0.0.0.0",
-        port=5000,
-        debug=False
-                     )
+    app.run(host="0.0.0.0", port=5000)
