@@ -142,9 +142,12 @@ async function loadReels(force=false){
     currentVideos = videos;
 
     const wrapper =
-        document.querySelector(".swiper-wrapper");
+    document.querySelector(".swiper-wrapper");
 
-    wrapper.innerHTML = "";
+const currentIndex =
+    swiper.activeIndex;
+
+wrapper.innerHTML = "";
 
     videos.forEach(v=>{
 
@@ -160,7 +163,7 @@ async function loadReels(force=false){
                 muted
                 loop
                 playsinline
-                preload="auto"
+                preload="metadata"
             >
                 <source src="${v.url}">
             </video>
@@ -186,11 +189,20 @@ async function loadReels(force=false){
 
     swiper.update();
 
-    addVideoEvents();
+swiper.slideTo(
+    Math.min(
+        currentIndex,
+        videos.length - 1
+    ),
+    0
+);
 
-    detectVideoType();
+addVideoEvents();
 
-    playActive();
+detectVideoType();
+
+playActive();
+
 }
 
 function detectVideoType(){
