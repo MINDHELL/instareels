@@ -3,6 +3,8 @@ from pyrogram import Client
 import os
 import json
 import threading
+import time
+
 
 app = Flask(__name__)
 
@@ -65,6 +67,19 @@ def background_download():
 
     finally:
         download_lock.release()
+
+#new
+def cache_updater():
+
+    while True:
+
+        try:
+            build_cache()
+
+        except Exception as e:
+            print("Cache updater:", e)
+
+        time.sleep(60)
 
 
 
@@ -194,15 +209,7 @@ def home():
 
 @app.route("/api/videos")
 def api_videos():
-
-    try:
-        return jsonify(build_cache())
-
-    except Exception as e:
-
-        print("API Error:", e)
-
-        return jsonify(CACHE)
+    return jsonify(CACHE) 
 
 
 # =========================
@@ -211,7 +218,7 @@ def api_videos():
 load_cache()
 
 threading.Thread(
-    target=background_download,
+    target=cache_updater,
     daemon=True
 ).start()
 
