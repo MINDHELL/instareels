@@ -249,13 +249,15 @@ function preloadNextVideos(){
         ]?.querySelector("video");
 
     if(next1){
-    next1.preload = "metadata";
-}
+        next1.preload = "metadata";
+    }
 
-if(next2){
-    next2.preload = "metadata";
+    if(next2){
+        next2.preload = "metadata";
     }
+
     }
+    
 function playActive(){
 
     document.querySelectorAll("video")
