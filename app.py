@@ -2,6 +2,7 @@ from flask import Flask, jsonify, render_template
 from pyrogram import Client
 import os
 import json
+import threading
 
 app = Flask(__name__)
 
@@ -60,10 +61,23 @@ def ensure_connected():
     except Exception as e:
         print("Telegram connection error:", e)
 
+def download_video(msg, file_path):
+
+    try:
+        print(f"Downloading {msg.id}")
+        msg.download(file_path)
+        print(f"Finished {msg.id}")
+
+    except Exception as e:
+        print("Download error:", e)
+
+
+
 
 # =========================
 # BUILD VIDEO CACHE
 # =========================
+
 def build_cache():
 
     global CACHE
@@ -90,24 +104,16 @@ def build_cache():
                 filename
             )
 
+            # Download in background
             if not os.path.exists(file_path):
 
-                try:
+                threading.Thread(
+                    target=download_video,
+                    args=(msg, file_path),
+                    daemon=True
+                ).start()
 
-                    print(
-                        f"Downloading video {msg.id}"
-                    )
-
-                    msg.download(file_path)
-
-                except Exception as e:
-
-                    print(
-                        f"Download failed {msg.id}:",
-                        e
-                    )
-
-                    continue
+                continue
 
             videos.append({
                 "url": f"/static/videos/{filename}",
@@ -130,6 +136,8 @@ def build_cache():
         print("Cache build error:", e)
 
         return CACHE
+
+
 
 
 # =========================
@@ -157,6 +165,11 @@ def api_videos():
 # STARTUP
 # =========================
 load_cache()
+
+threading.Thread(
+    target=build_cache,
+    daemon=True
+).start()
 
 
 # =========================
